@@ -140,9 +140,9 @@ PURPLE = (180, 0, 255)
 WHITE = (255, 255, 255)
 COLORS = (RED, YELLOW, GREEN, CYAN, BLUE, PURPLE, WHITE, BLACK)
 
-range1 = range(1,3)
-range2 = range(3,5)
-range3 = range(5,7)
+range1 = range(1,2)
+range2 = range(5,6)
+range3 = range(9,10)
 
 def off():
     pixels_fill(BLACK)

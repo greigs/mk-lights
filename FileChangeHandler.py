@@ -16,16 +16,28 @@ class FileChangeHandler(FileSystemEventHandler):
             with open(event.src_path, "r") as file:
                 new_lines = file.readlines()
             if new_lines.__sizeof__() > 0:
-                if self.isOn:
-                  print('LED OFF')
-                  self.serial_port.write('one()\r'.encode())
-                  self.serial_port.flushInput()
-                  self.isOn = False
-                else:
-                  print('LED ON')
-                  self.serial_port.write('three()\r'.encode())
-                  self.serial_port.flushInput()
-                  self.isOn = True
+                  line = new_lines[-1]
+                  print(line)
+                  if line.__contains__('SAMPLE 14: 72'):
+                    self.serial_port.write('three()\r'.encode())
+                    self.serial_port.flushInput()
+                    self.isOn = True
+                    time.sleep(2)
+                    self.serial_port.write('off()\r'.encode())
+                    self.serial_port.flushInput()
+                    self.isOn = False
+                  elif line.__contains__('SAMPLE 14: 60'):
+                    self.serial_port.write('one()\r'.encode())
+                    self.serial_port.flushInput()
+                    self.isOn = True
+                    time.sleep(1.25)
+                    self.serial_port.write('two()\r'.encode())
+                    self.serial_port.flushInput()
+                    self.isOn = False
+                  else:
+                    self.serial_port.write('off()\r'.encode())
+                    self.serial_port.flushInput()
+                    self.isOn = True
 
 
 if __name__ == "__main__":
