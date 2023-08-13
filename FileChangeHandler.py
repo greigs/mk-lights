@@ -1,11 +1,14 @@
-import serial
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import websocket
+import _thread
+import time
+import rel
 
 class FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, serial_port):
-        self.serial_port = serial_port
+    def __init__(self, ws):
+        self.ws = ws
         self.isOn = False
 
     def on_modified(self, event):
@@ -19,31 +22,54 @@ class FileChangeHandler(FileSystemEventHandler):
                   line = new_lines[-1]
                   print(line)
                   if line.__contains__('SAMPLE 14: 72'):
-                    self.serial_port.write('three()\r'.encode())
-                    self.serial_port.flushInput()
+                    ws.send('three()')
+                    
                     self.isOn = True
                     time.sleep(2)
-                    self.serial_port.write('off()\r'.encode())
-                    self.serial_port.flushInput()
+                    ws.send('off()')
+                    
                     self.isOn = False
                   elif line.__contains__('SAMPLE 14: 60'):
-                    self.serial_port.write('one()\r'.encode())
-                    self.serial_port.flushInput()
+                    ws.send('one()')
+                    
                     self.isOn = True
                     time.sleep(1.25)
-                    self.serial_port.write('two()\r'.encode())
-                    self.serial_port.flushInput()
+                    ws.send('two()')
+                    
                     self.isOn = False
                   else:
-                    self.serial_port.write('off()\r'.encode())
-                    self.serial_port.flushInput()
+                    ws.send('off()')
+                    
                     self.isOn = True
+
+
+def on_message(ws, message):
+    print(message)
+
+def on_error(ws, error):
+    print(error)
+
+def on_close(ws, close_status_code, close_msg):
+    print("### closed ###")
+
+def on_open(ws):
+    print("Opened connection")
+
 
 
 if __name__ == "__main__":
-    ser = serial.Serial("COM3", baudrate=115200, timeout=1)
 
-    event_handler = FileChangeHandler(ser)
+    websocket.enableTrace(True)
+    ws = websocket.WebSocketApp("ws://192.168.1.8:3000",
+                              on_open=on_open,
+                              on_message=on_message,
+                              on_error=on_error,
+                              on_close=on_close)
+
+    ws.run_forever(dispatcher=rel, reconnect=5)  # Set dispatcher to automatic reconnection, 5 second reconnect delay if connection closed unexpectedly
+    ws.send('off()')
+
+    event_handler = FileChangeHandler(ws)
     observer = Observer()
     observer.schedule(event_handler, path="C:\\roms\\bsnes-plus-v05.100-master\\", recursive=False)
     observer.start()
@@ -55,4 +81,6 @@ if __name__ == "__main__":
         observer.stop()
 
     observer.join()
-    ser.close()
+
+    rel.signal(2, rel.abort)  # Keyboard Interrupt
+    rel.dispatch()
